@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>AHADU MARKET — Sales Portal</title>
+
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Telegram Login Widget: REPLACE username below with your bot's username (without @) -->
+  <script async src="https://telegram.org/js/telegram-widget.js?15"
+          data-telegram-login="YOUR_BOT_USERNAME_HERE"
+          data-size="large" data-userpic="false" data-lang="en" data-radius="8"
+          data-onauth="onTelegramAuth(userData)">
+  </script>
+
+  <style>
+    :root { --ahadu-blue: #0B66C3; --ahadu-black: #0b0b0b; --ahadu-white: #ffffff; }
+    [data-theme="dark"] { background: #071022; color: #e6eefc; }
+    [data-theme="bright"] { background: #f7fbff; color: #0b0b0b; }
+    body { min-height: 100vh; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    .btn-primary { background: var(--ahadu-blue); color: white; }
+    .tab-active { border-bottom: 2px solid var(--ahadu-blue); }
+  </style>
+</head>
+<body data-theme="bright" class="antialiased">
+  <div class="max-w-3xl mx-auto p-4">
+    <header class="flex items-center justify-between mb-4">
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-md bg-[color:var(--ahadu-blue)] flex items-center justify-center text-white font-bold">AM</div>
+        <div>
+          <h1 class="text-xl font-semibold">AHADU MARKET</h1>
+          <p class="text-sm text-gray-500">Sales team mini-app</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="theme-toggle" class="px-3 py-2 rounded border">Toggle Theme</button>
+      </div>
+    </header>
+
+    <main class="bg-white rounded-lg p-4 shadow">
+      <div id="app-root">
+        <div id="login-area">
+          <p class="mb-2 text-sm text-gray-600">Log in with Telegram to continue.</p>
+          <div id="tg-login"></div>
+          <div class="mt-4">
+            <label class="block text-xs font-medium text-gray-700">Phone (optional)</label>
+            <input id="phone-input" type="text" placeholder="+2519..." class="mt-1 block w-full rounded border px-2 py-2" />
+            <button id="manual-register" class="mt-3 btn-primary px-4 py-2 rounded">Register</button>
+          </div>
+        </div>
+
+        <div id="pending-screen" class="hidden">
+          <h2 class="text-lg font-semibold">Pending Approval</h2>
+          <p class="mt-2 text-sm">Your registration is pending admin approval.</p>
+        </div>
+
+        <div id="sales-dashboard" class="hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 id="welcome-sales" class="text-lg font-semibold"></h2>
+              <p id="sales-role" class="text-sm text-gray-500">Salesperson</p>
+            </div>
+            <div>
+              <button id="logout-btn" class="px-3 py-2 border rounded">Logout</button>
+            </div>
+          </div>
+
+          <div class="mt-4 border-b">
+            <nav class="flex gap-4 text-sm">
+              <button class="py-2 tab-btn tab-active" data-tab="leaderboard">Leaderboard</button>
+              <button class="py-2 tab-btn" data-tab="myportal">My Portal</button>
+            </nav>
+          </div>
+
+          <section id="sales-content" class="mt-4">
+            <div id="leaderboard-tab">
+              <h3 class="font-semibold">Monthly Leaderboard</h3>
+              <div id="leaderboard-list" class="mt-2 space-y-2"></div>
+            </div>
+
+            <div id="myportal-tab" class="hidden">
+              <h3 class="font-semibold">Inventory</h3>
+              <div id="product-list" class="mt-2 space-y-2"></div>
+
+              <div class="mt-4">
+                <h4 class="font-semibold">Log New Sale</h4>
+                <div class="mt-2">
+                  <label class="block text-xs">Select product (or choose Other)</label>
+                  <select id="sale-product" class="mt-1 block w-full rounded border px-2 py-2">
+                    <option value="">-- Choose product --</option>
+                  </select>
+                  <div id="other-inputs" class="hidden mt-2 space-y-2">
+                    <input id="other-name" placeholder="Laptop model" class="block w-full rounded border px-2 py-2" />
+                    <input id="other-price" placeholder="Price (ETB)" type="number" class="block w-full rounded border px-2 py-2" />
+                  </div>
+
+                  <input id="cust-name" placeholder="Customer name" class="mt-2 block w-full rounded border px-2 py-2" />
+                  <input id="cust-phone" placeholder="Customer phone" class="mt-2 block w-full rounded border px-2 py-2" />
+                  <button id="log-sale" class="mt-3 btn-primary px-4 py-2 rounded">Log Sale</button>
+                </div>
+
+                <div class="mt-4">
+                  <h4 class="font-semibold">My Orders</h4>
+                  <div id="my-orders" class="mt-2 space-y-2"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div id="admin-dashboard" class="hidden">
+          <div class="flex items-center justify-between">
+            <div>
+              <h2 id="welcome-admin" class="text-lg font-semibold">Admin Dashboard</h2>
+              <p class="text-sm text-gray-500">Full control panel</p>
+            </div>
+            <div>
+              <button id="logout-admin" class="px-3 py-2 border rounded">Logout</button>
+            </div>
+          </div>
+
+          <div class="mt-4 border-b">
+            <nav class="flex gap-4 text-sm">
+              <button class="py-2 admin-tab tab-active" data-tab="approvals">Approvals</button>
+              <button class="py-2 admin-tab" data-tab="orders">Orders</button>
+              <button class="py-2 admin-tab" data-tab="products">Products</button>
+              <button class="py-2 admin-tab" data-tab="payouts">Payouts</button>
+              <button class="py-2 admin-tab" data-tab="leaderboard">Leaderboard</button>
+            </nav>
+          </div>
+
+          <section id="admin-content" class="mt-4">
+            <div id="admin-approvals">
+              <h3 class="font-semibold">Pending Approvals</h3>
+              <div id="pending-list" class="mt-2 space-y-2"></div>
+            </div>
+
+            <div id="admin-orders" class="hidden">
+              <h3 class="font-semibold">All Orders</h3>
+              <div id="admin-order-list" class="mt-2 space-y-2"></div>
+            </div>
+
+            <div id="admin-products" class="hidden">
+              <h3 class="font-semibold">Products</h3>
+              <div class="mt-2">
+                <input id="new-prod-name" placeholder="Name" class="block w-full rounded border px-2 py-2 mt-1" />
+                <input id="new-prod-price" placeholder="Price" type="number" class="block w-full rounded border px-2 py-2 mt-1" />
+                <input id="new-prod-qty" placeholder="Quantity" type="number" class="block w-full rounded border px-2 py-2 mt-1" />
+                <textarea id="new-prod-specs" placeholder="Specs" class="block w-full rounded border px-2 py-2 mt-1"></textarea>
+                <button id="add-product" class="mt-2 btn-primary px-4 py-2 rounded">Add Product</button>
+                <div id="prod-list-admin" class="mt-4 space-y-2"></div>
+              </div>
+            </div>
+
+            <div id="admin-payouts" class="hidden">
+              <h3 class="font-semibold">Payouts</h3>
+              <div id="payout-list" class="mt-2 space-y-2"></div>
+            </div>
+
+            <div id="admin-leaderboard" class="hidden">
+              <h3 class="font-semibold">Leaderboard</h3>
+              <div id="leaderboard-admin" class="mt-2 space-y-2"></div>
+            </div>
+          </section>
+        </div>
+
+      </div>
+    </main>
+
+    <footer class="mt-6 text-center text-xs text-gray-500">
+      AHADU MARKET • Built for local testing and production. Remember to set env vars for production.
+    </footer>
+  </div>
+
+<script>
+const API_BASE = "";
+let sessionToken = localStorage.getItem("ahadu_session") || null;
+let currentUser = null;
+
+/* THEME */
+const themeToggle = document.getElementById("theme-toggle");
+function setTheme(t) { document.body.setAttribute("data-theme", t); localStorage.setItem("ahadu_theme", t); }
+const savedTheme = localStorage.getItem("ahadu_theme") || "bright";
+setTheme(savedTheme);
+themeToggle.addEventListener("click", () => setTheme(document.body.getAttribute("data-theme")==="bright" ? "dark" : "bright"));
+
+/* TELEGRAM WIDGET CALLBACK */
+function onTelegramAuth(userData) {
+  fetch(API_BASE + "/api/auth/telegram", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(userData)
+  }).then(r => r.json()).then(data => {
+    if (data.session_token) {
+      sessionToken = data.session_token;
+      localStorage.setItem("ahadu_session", sessionToken);
+      currentUser = data.user;
+      bootForUser();
+    } else {
+      alert("Login failed: " + JSON.stringify(data));
+    }
+  }).catch(e => { console.error(e); alert("Auth error"); });
+}
+
+document.getElementById("manual-register").addEventListener("click", () => alert("Use Telegram login widget to register."));
+
+/* fetch wrapper */
+function apiFetch(path, opts) {
+  const headers = (opts && opts.headers) ? opts.headers : {};
+  if (sessionToken) headers["Authorization"] = sessionToken;
+  return fetch(API_BASE + path, Object.assign({}, opts || {}, {headers: Object.assign({"Content-Type":"application/json"}, headers)}))
+    .then(async r => {
+      const json = await r.json().catch(()=>({}));
+      if (!r.ok) throw json;
+      return json;
+    });
+}
+
+function show(el){ el.classList.remove("hidden"); }
+function hide(el){ el.classList.add("hidden"); }
+
+/* Boot */
+function bootForUser() {
+  apiFetch("/api/me", {method: "GET"})
+    .then(data => { currentUser = data.user; renderForUser(); })
+    .catch(err => { console.error(err); localStorage.removeItem("ahadu_session"); sessionToken=null; renderLogin(); });
+}
+
+function renderLogin(){ hide(document.getElementById("pending-screen")); hide(document.getElementById("sales-dashboard")); hide(document.getElementById("admin-dashboard")); show(document.getElementById("login-area")); }
+function renderPending(){ hide(document.getElementById("login-area")); hide(document.getElementById("sales-dashboard")); hide(document.getElementById("admin-dashboard")); show(document.getElementById("pending-screen")); }
+function renderSalesDashboard(){ hide(document.getElementById("login-area")); hide(document.getElementById("pending-screen")); hide(document.getElementById("admin-dashboard")); show(document.getElementById("sales-dashboard")); document.getElementById("welcome-sales").innerText=`Welcome, ${currentUser.name}`; loadLeaderboard(); loadProducts(); loadMyOrders(); }
+function renderAdminDashboard(){ hide(document.getElementById("login-area")); hide(document.getElementById("pending-screen")); hide(document.getElementById("sales-dashboard")); show(document.getElementById("admin-dashboard")); loadPendingApprovals(); loadAdminOrders(); loadAdminProducts(); loadPayouts(); loadLeaderboardAdmin(); }
+
+function renderForUser(){ if (!currentUser) { renderLogin(); return; } if (currentUser.role === "admin") renderAdminDashboard(); else { if (currentUser.status === "PENDING") renderPending(); else renderSalesDashboard(); } }
+
+document.getElementById("logout-btn").addEventListener("click", ()=>{ localStorage.removeItem("ahadu_session"); sessionToken=null; currentUser=null; renderLogin(); });
+document.getElementById("logout-admin").addEventListener("click", ()=>{ localStorage.removeItem("ahadu_session"); sessionToken=null; currentUser=null; renderLogin(); });
+
+/* Tabs */
+document.querySelectorAll(".tab-btn").forEach(btn=>btn.addEventListener("click", ()=>{
+  document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("tab-active"));
+  btn.classList.add("tab-active");
+  const tab=btn.dataset.tab; document.getElementById("leaderboard-tab").classList.toggle("hidden", tab!=="leaderboard"); document.getElementById("myportal-tab").classList.toggle("hidden", tab!=="myportal");
+}));
+document.querySelectorAll(".admin-tab").forEach(btn=>btn.addEventListener("click", ()=>{
+  document.querySelectorAll(".admin-tab").forEach(b=>b.classList.remove("tab-active"));
+  btn.classList.add("tab-active");
+  const tab=btn.dataset.tab;
+  ["approvals","orders","products","payouts","leaderboard"].forEach(t=>document.getElementById("admin-"+t).classList.toggle("hidden", t!==tab));
+}));
+
+/* PRODUCTS & SALES */
+function loadProducts(){
+  apiFetch("/api/products", {method: "GET"})
+    .then(data=>{
+      const list=document.getElementById("product-list");
+      const sel=document.getElementById("sale-product");
+      list.innerHTML=""; sel.innerHTML="<option value=''>-- Choose product --</option>";
+      data.products.forEach(p=>{
+        const card=document.createElement("div"); card.className="p-2 border rounded";
+        card.innerHTML=`<div class="flex justify-between"><div><div class="font-semibold">${p.name} <span class="text-xs text-gray-500">(${p.quantity} in stock)</span></div><div class="text-xs text-gray-500">${p.specs || ""}</div></div><div class="text-right"><div class="font-semibold">${p.price} ETB</div></div></div>`;
+        list.appendChild(card);
+        const opt=document.createElement("option"); opt.value=p.id; opt.textContent=`${p.name} — ${p.price} ETB (${p.quantity})`; sel.appendChild(opt);
+      });
+    }).catch(err=>console.error(err));
+}
+document.getElementById("sale-product").addEventListener("change",(e)=>{ document.getElementById("other-inputs").classList.toggle("hidden", !!e.target.value); });
+document.getElementById("log-sale").addEventListener("click", ()=>{
+  const product_id=document.getElementById("sale-product").value;
+  const other_name=document.getElementById("other-name").value;
+  const other_price=document.getElementById("other-price").value;
+  const customer_name=document.getElementById("cust-name").value;
+  const customer_phone=document.getElementById("cust-phone").value;
+  const body={customer_name, customer_phone};
+  if (product_id) body.product_id=product_id;
+  else { body.other_name=other_name; body.other_price=other_price; }
+  apiFetch("/api/orders", {method: "POST", body: JSON.stringify(body)})
+    .then(r=>{ alert("Order logged. Admin will review it."); document.getElementById("other-name").value=""; document.getElementById("other-price").value=""; document.getElementById("cust-name").value=""; document.getElementById("cust-phone").value=""; loadMyOrders(); })
+    .catch(err=>{ console.error(err); alert("Error: "+JSON.stringify(err)); });
+});
+function loadMyOrders(){ apiFetch("/api/orders",{method:"GET"}).then(data=>{ const c=document.getElementById("my-orders"); c.innerHTML=""; data.orders.forEach(o=>{ let productDesc=o.product?`${o.product.name} (${o.product.price} ETB)`:`${o.other_name} (${o.other_price} ETB)`; const el=document.createElement("div"); el.className="p-2 border rounded"; el.innerHTML=`<div class="flex justify-between"><div><div class="font-semibold">${productDesc}</div><div class="text-xs text-gray-500">Customer: ${o.customer_name} — ${o.customer_phone}</div></div><div class="text-right"><div class="text-sm">${o.status}</div><div class="text-xs text-gray-400">${new Date(o.created_at).toLocaleString()}</div></div></div>`; c.appendChild(el); }); }); }
+
+/* LEADERBOARD */
+function loadLeaderboard(){ apiFetch("/api/leaderboard",{method:"GET"}).then(data=>{ const list=document.getElementById("leaderboard-list"); list.innerHTML=""; data.leaderboard.forEach((r,idx)=>{ const el=document.createElement("div"); el.className="p-2 border rounded flex justify-between"; el.innerHTML=`<div><div class="font-semibold">${idx+1}. ${r.name}</div><div class="text-xs text-gray-500">${r.orders} orders</div></div><div class="text-right"><div class="font-semibold">${r.total_sales} ETB</div></div>`; list.appendChild(el); }); }).catch(err=>console.error(err)); }
+
+/* ADMIN */
+function loadPendingApprovals(){ apiFetch("/api/admin/pending",{method:"GET"}).then(data=>{ const c=document.getElementById("pending-list"); c.innerHTML=""; data.pending.forEach(u=>{ const el=document.createElement("div"); el.className="p-2 border rounded flex justify-between"; el.innerHTML=`<div><div class="font-semibold">${u.name}</div><div class="text-xs text-gray-500">Telegram: ${u.telegram_id}</div></div><div class="flex gap-2"><button class="approve-btn px-3 py-1 rounded border" data-id="${u.id}">Approve</button></div>`; c.appendChild(el); }); document.querySelectorAll(".approve-btn").forEach(b=>b.addEventListener("click", ()=>{ apiFetch("/api/admin/approve_user",{method:"POST", body: JSON.stringify({user_id: b.dataset.id})}).then(()=>{ alert("User approved."); loadPendingApprovals(); }).catch(err=>{ console.error(err); alert("Error: "+JSON.stringify(err)); }); })); }).catch(err=>console.error(err)); }
+
+function loadAdminOrders(){ apiFetch("/api/orders",{method:"GET"}).then(data=>{ const container=document.getElementById("admin-order-list"); container.innerHTML=""; data.orders.forEach(o=>{ let productDesc=o.product?`${o.product.name} (${o.product.price} ETB)`:`${o.other_name} (${o.other_price} ETB)`; const el=document.createElement("div"); el.className="p-2 border rounded"; el.innerHTML=`<div class="flex justify-between"><div><div class="font-semibold">Order ${o.id} — ${productDesc}</div><div class="text-xs text-gray-500">Sales: ${o.salesperson_id} — Customer: ${o.customer_name} ${o.customer_phone}</div></div><div class="flex flex-col gap-2">${o.status === "PENDING" ? `<button class="approve-order px-3 py-1 rounded btn-primary" data-id="${o.id}">Approve</button><button class="reject-order px-3 py-1 rounded border" data-id="${o.id}">Reject</button>` : `<div class="text-sm">${o.status}</div>`}</div></div>`; container.appendChild(el); }); document.querySelectorAll(".approve-order").forEach(b=>b.addEventListener("click", ()=>{ apiFetch("/api/admin/order_action",{method:"POST", body: JSON.stringify({order_id: b.dataset.id, action: "approve"})}).then(()=>{ alert("Order approved."); loadAdminOrders(); }).catch(err=>{ console.error(err); alert("Error: "+JSON.stringify(err)); }); })); document.querySelectorAll(".reject-order").forEach(b=>b.addEventListener("click", ()=>{ apiFetch("/api/admin/order_action",{method:"POST", body: JSON.stringify({order_id: b.dataset.id, action: "reject"})}).then(()=>{ alert("Order rejected."); loadAdminOrders(); }).catch(err=>{ console.error(err); alert("Error: "+JSON.stringify(err)); }); })); }).catch(err=>console.error(err)); }
+
+function loadAdminProducts(){ apiFetch("/api/products",{method:"GET"}).then(data=>{ const list=document.getElementById("prod-list-admin"); list.innerHTML=""; data.products.forEach(p=>{ const el=document.createElement("div"); el.className="p-2 border rounded flex justify-between"; el.innerHTML=`<div><div class="font-semibold">${p.name}</div><div class="text-xs text-gray-500">${p.specs}</div></div><div class="text-right"><div>${p.price} ETB</div><div class="text-xs text-gray-500">${p.quantity}</div><button class="delete-prod mt-2 px-2 py-1 border rounded" data-id="${p.id}">Delete</button></div>`; list.appendChild(el); }); document.querySelectorAll(".delete-prod").forEach(b=>b.addEventListener("click", ()=>{ if (!confirm("Delete product?")) return; apiFetch("/api/products",{method:"DELETE", body: JSON.stringify({product_id: b.dataset.id})}).then(()=>{ alert("Deleted"); loadAdminProducts(); loadProducts(); }).catch(err=>{ console.error(err); alert("Error: "+JSON.stringify(err)); }); })); }).catch(err=>console.error(err)); }
+
+document.getElementById("add-product").addEventListener("click", ()=>{ const name=document.getElementById("new-prod-name").value; const price=document.getElementById("new-prod-price").value; const qty=document.getElementById("new-prod-qty").value; const specs=document.getElementById("new-prod-specs").value; apiFetch("/api/products",{method:"POST", body: JSON.stringify({name, price, quantity: qty, specs})}).then(()=>{ alert("Added"); document.getElementById("new-prod-name").value=""; document.getElementById("new-prod-price").value=""; document.getElementById("new-prod-qty").value=""; document.getElementById("new-prod-specs").value=""; loadAdminProducts(); loadProducts(); }).catch(err=>{ console.error(err); alert("Error: "+JSON.stringify(err)); }); });
+
+function loadPayouts(){ apiFetch("/api/admin/payouts",{method:"GET"}).then(data=>{ const list=document.getElementById("payout-list"); list.innerHTML=""; data.payouts.forEach(p=>{ const el=document.createElement("div"); el.className="p-2 border rounded flex justify-between"; el.innerHTML=`<div><div class="font-semibold">${p.name}</div><div class="text-xs text-gray-500">Total sales: ${p.total_sales} ETB</div></div><div class="text-right"><div class="font-semibold">${p.unpaid_commission} ETB</div><button class="mark-paid mt-2 px-2 py-1 border rounded" data-id="${p.salesperson_id}">Mark as Paid</button></div>`; list.appendChild(el); }); document.querySelectorAll(".mark-paid").forEach(b=>b.addEventListener("click", ()=>{ apiFetch("/api/admin/payouts",{method:"POST", body: JSON.stringify({salesperson_id: b.dataset.id})}).then(()=>{ alert("Marked as paid"); loadPayouts(); }).catch(err=>{ console.error(err); alert("Error: "+JSON.stringify(err)); }); })); }).catch(err=>console.error(err)); }
+
+function loadLeaderboardAdmin(){ apiFetch("/api/leaderboard",{method:"GET"}).then(data=>{ const list=document.getElementById("leaderboard-admin"); list.innerHTML=""; data.leaderboard.forEach((r, idx)=>{ const el=document.createElement("div"); el.className="p-2 border rounded flex justify-between"; el.innerHTML=`<div><div class="font-semibold">${idx+1}. ${r.name}</div><div class="text-xs text-gray-500">${r.orders} orders</div></div><div class="text-right"><div class="font-semibold">${r.total_sales} ETB</div></div>`; list.appendChild(el); }); }).catch(err=>console.error(err)); }
+
+/* INITIAL load */
+if (sessionToken) bootForUser(); else renderLogin();
+</script>
+</body>
+</html>
