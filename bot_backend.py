@@ -42,8 +42,9 @@ from telegram.ext import Updater, Dispatcher, CommandHandler, MessageHandler, Fi
 # -------------------------
 # WARNING: For local testing you provided a token earlier.
 # For production move these into environment variables.
-DEFAULT_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "6180505622:AAEW7vZO3IIXO91EPOaQFYt3gBO9GUcPoas")
-DEFAULT_ADMIN_CHAT_ID = os.getenv("TELEGRAM_BOT_ADMIN_CHAT_ID", "1241311689")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = int(os.getenv("ADMIN_ID"))
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # e.g., https://<your-domain>/telegram/webhook
 SECRET_KEY = os.getenv("SECRET_KEY", "change-this-secret-in-prod")
